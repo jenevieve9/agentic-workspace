@@ -25,7 +25,7 @@ export default function ContentStudio() {
   const [formatPlatform, setFormatPlatform] = useState('公众号');
   const [formattedText, setFormattedText] = useState('');
 
-  // 模拟AI生成
+  // 模拟AI生成：基于主题+平台拼接更真实的文案
   const generateDraft = () => {
     if (!topic.trim()) {
       alert('请输入主题或灵感');
@@ -34,16 +34,73 @@ export default function ContentStudio() {
     setIsGenerating(true);
     setDraft('');
 
+    const t = topic.trim();
+
+    const generators = {
+      '公众号': () => {
+        const angles = [
+          `最近一直在思考「${t}」这件事。`,
+          `关于${t}，我经历了 3 个阶段的认知变化。`,
+          `今天想和你聊一个很多人都在问的问题：${t}。`,
+        ];
+        const angle = angles[Math.floor(Math.random() * angles.length)];
+        return `${angle}
+
+先说结论：真正能把 ${t} 做出结果的人，往往不是最努力的，而是最会抓杠杆的。
+
+一、看清本质：${t} 不是单点问题，而是系统问题。你需要把目标拆成可执行的模块，而不是堆时间。
+
+二、找对工具：AI 时代，很多重复劳动完全可以被工具替代。把省下来的时间投入到判断和创意上，回报率会高很多。
+
+三、持续迭代：先完成，再完美。做出最小可行版本，拿到反馈，再逐步优化。
+
+下一步行动：
+1. 用 30 分钟把当前项目拆成 3 个模块；
+2. 为每个模块找到一款合适的 AI 工具；
+3. 本周内跑通一个最小闭环，记录数据。
+
+如果你也在做 ${t}，欢迎在评论区分享你的进展，一起迭代。
+
+#${t} #AI工具 #效率提升 #内容策略`;
+      },
+      '抖音口播': () => {
+        return `大家好，今天我们来聊聊 ${t}。
+
+我先说一个反常识的观点：做 ${t}，最忌讳的其实就是“太努力”。
+
+为什么呢？因为 ${t} 的核心不是堆时间，而是找杠杆。
+
+第一，你要把大目标拆成小模块，每个模块只解决一个具体问题；
+第二，善用 AI 工具，把重复工作交给机器，你只做判断；
+第三，先跑通最小闭环，拿到真实反馈，再快速迭代。
+
+你卡在 ${t} 的哪一步？评论区告诉我，下期我来拆解。#${t}`;
+      },
+      '小红书笔记': () => {
+        const bodies = [
+          `1️⃣ 先搞清本质：${t} 不是单点问题，要拆成模块逐个解决；\n2️⃣ 善用工具：把重复工作交给 AI，自己只做决策；\n3️⃣ 快速迭代：先跑最小闭环，再优化。`,
+          `✅ 第一步：把 ${t} 的目标拆成 3 个可执行模块；\n✅ 第二步：为每个模块匹配一款 AI 工具；\n✅ 第三步：本周内跑通一个最小闭环，记录数据。`,
+        ];
+        const body = bodies[Math.floor(Math.random() * bodies.length)];
+        return `📌 ${t}
+
+姐妹们，最近一直在研究 ${t}，发现几个关键点：
+
+${body}
+
+💡 核心感悟：完成比完美重要，闭环比努力重要。
+
+你们做 ${t} 时遇到过什么坑？评论区一起聊聊～
+
+#${t} #AI工具 #效率 #个人成长`;
+      },
+    };
+
+    const delay = 1000 + Math.random() * 800; // 1-1.8s
     setTimeout(() => {
-      const templates = {
-        '公众号': `【${topic}】\n\n在出海营销的实践中，品牌需要更本地化的内容策略。结合AI工具，快速生成多语言素材，通过数据分析优化转化路径。\n\n下一步：1. 建立内容矩阵 2. 测试反馈 3. 迭代优化。\n\n#出海营销 #AI工具 #内容策略`,
-        '抖音口播': `大家好，今天我们来聊聊 ${topic}。\n\n很多人在做这件事的时候都会犯一个错误，就是忽略了底层逻辑。\n\n其实核心就三点：第一，明确目标；第二，选对工具；第三，持续迭代。\n\n关注我，带你了解更多干货。`,
-        '小红书笔记': `📌 ${topic}\n\n最近在研究这个话题，发现几个值得分享的点：\n\n✅ 第一个关键认知\n✅ 第二个实操方法\n✅ 第三个避坑指南\n\n你们有没有遇到过类似的问题？评论区聊聊～`,
-      };
-      const result = templates[platform] || templates['公众号'];
-      setDraft(result);
+      setDraft((generators[platform] || generators['公众号'])());
       setIsGenerating(false);
-    }, 1200);
+    }, delay);
   };
 
   const handleSave = () => {
@@ -61,13 +118,39 @@ export default function ContentStudio() {
     setDraft('');
   };
 
-  // 排版预览
+  // 排版预览：根据平台做段落化、视觉化重排
   const handleFormatPreview = () => {
     if (!rawText.trim()) {
       alert('请粘贴原始文本');
       return;
     }
-    setFormattedText(rawText);
+    setFormattedText(formatContent(rawText, formatPlatform));
+  };
+
+  const formatContent = (text, platform) => {
+    const paragraphs = text
+      .split(/\n{2,}/)
+      .map((p) => p.trim())
+      .filter(Boolean);
+
+    if (platform === '小红书') {
+      // 小红书：短段落、加 emoji、空行更大
+      return paragraphs
+        .map((p) => {
+          const emojis = ['✅', '💡', '📌', '👉', '🔥', '❗️'];
+          const prefix = p.length < 20 ? `${emojis[Math.floor(Math.random() * emojis.length)]} ` : '';
+          return prefix + p;
+        })
+        .join('\n\n');
+    }
+
+    // 公众号：标题化、段落清晰
+    if (paragraphs.length > 1) {
+      const title = paragraphs[0];
+      const body = paragraphs.slice(1);
+      return `\n${title}\n\n${body.join('\n\n')}\n`;
+    }
+    return text;
   };
 
   const formatStyle = {
@@ -154,7 +237,7 @@ export default function ContentStudio() {
           <Button onClick={handleFormatPreview}>预览排版</Button>
           {formattedText && (
             <div
-              className="border border-border rounded-sm p-3 bg-[var(--surface-2)]"
+              className="border border-border rounded-sm p-3 bg-[var(--surface-2)] whitespace-pre-wrap"
               style={formatStyle[formatPlatform] || formatStyle['公众号']}
             >
               {formattedText}

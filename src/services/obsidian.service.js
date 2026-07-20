@@ -9,9 +9,15 @@ const todayStr = () => new Date().toISOString().slice(0, 10);
 // 读取当前配置（在非 React 上下文中也可调用）
 const getConfig = () => useObsidianStore.getState();
 
+const getVault = () => {
+  const vault = (getConfig().vault || '').trim();
+  if (!vault) throw new Error('请先在「系统联动」设置 Obsidian 仓库名');
+  return vault;
+};
+
 // 新建/打开一条笔记（obsidian://new）
 export const openObsidianNew = (title, content = '') => {
-  const { vault } = getConfig();
+  const vault = getVault();
   const name = encodeURIComponent(title);
   const body = encodeURIComponent(
     content || `# ${title}\n\n## 今日状态\n-\n\n## 思考\n-`
@@ -23,10 +29,11 @@ export const openObsidianNew = (title, content = '') => {
 // 按文件名打开既有笔记；不支持时回退到新建
 export const openObsidianByPath = (date) => {
   const name = `日记_${date}`;
-  const url = `obsidian://open?vault=${encodeURIComponent(getConfig().vault)}&file=${encodeURIComponent(name)}`;
+  const vault = getVault();
+  const url = `obsidian://open?vault=${encodeURIComponent(vault)}&file=${encodeURIComponent(name)}`;
   try {
     window.open(url, '_blank');
-  } catch (e) {
+  } catch {
     openObsidianNew(name);
   }
 };

@@ -176,9 +176,13 @@ export default function Settings() {
               <span className="block text-xs text-text-light mb-1">仓库名</span>
               <input
                 value={vault}
+                placeholder="例如：Main（与 Obsidian 左下角仓库名一致）"
                 onChange={(e) => setObsidianConfig({ vault: e.target.value })}
                 className="w-full px-3 py-1.5 border border-border rounded-sm text-sm focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
               />
+              <span className="block text-[0.65rem] text-text-light mt-1">
+                必须与 Obsidian 左下角显示的仓库名完全一致，才能正确唤起。
+              </span>
             </label>
             <label className="text-sm sm:col-span-2">
               <span className="block text-xs text-text-light mb-1">
