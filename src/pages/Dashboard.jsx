@@ -81,19 +81,19 @@ export default function Dashboard() {
 
       {/* 第一行：关键指标卡片 */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-surface border border-border rounded-md p-5 shadow-sm">
-          <div className="text-3xl font-semibold">{totalGoals}</div>
+        <div className="bg-surface border border-border rounded-lg p-5">
+          <div className="text-3xl font-semibold text-text-main">{totalGoals}</div>
           <div className="text-xs text-text-light font-mono mt-1">总目标</div>
         </div>
-        <div className="bg-surface border border-border rounded-md p-5 shadow-sm">
+        <div className="bg-surface border border-border rounded-lg p-5">
           <div className="text-3xl font-semibold">{activeGoals}</div>
           <div className="text-xs text-text-light font-mono mt-1">进行中</div>
         </div>
-        <div className="bg-surface border border-border rounded-md p-5 shadow-sm">
+        <div className="bg-surface border border-border rounded-lg p-5">
           <div className="text-3xl font-semibold">{krRate}%</div>
           <div className="text-xs text-text-light font-mono mt-1">本月关键结果</div>
         </div>
-        <div className="bg-surface border border-border rounded-md p-5 shadow-sm">
+        <div className="bg-surface border border-border rounded-lg p-5">
           <div className="text-3xl font-semibold">{todayTodos.length}</div>
           <div className="text-xs text-text-light font-mono mt-1">今日待办</div>
         </div>
@@ -102,7 +102,7 @@ export default function Dashboard() {
       {/* 第二行：里程碑路线图 + 近期任务 */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* 左侧：里程碑路线图 */}
-        <div className="bg-surface border border-border rounded-md p-5">
+        <div className="bg-surface border border-border rounded-lg p-5">
           <div className="font-medium text-sm mb-4">里程碑路线图</div>
           {upcomingMilestones.length === 0 ? (
             <div className="text-text-light text-sm">暂无进行中的里程碑</div>
@@ -137,7 +137,7 @@ export default function Dashboard() {
         </div>
 
         {/* 右侧：近期任务（本周，按日期分组） */}
-        <div className="bg-surface border border-border rounded-md p-5">
+        <div className="bg-surface border border-border rounded-lg p-5">
           <div className="font-medium text-sm mb-4">近期任务（本周）</div>
           {weekTodoCount === 0 ? (
             <div className="text-text-light text-sm">本周暂无待办</div>
