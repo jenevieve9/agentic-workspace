@@ -3,7 +3,7 @@
 一个本地优先（local-first）的个人工作台 Web 应用：看板、年度/月度/周目标、每日 TODO、日记、思考积累、内容工坊、减肥修身、备婚等模块，数据全部存于浏览器 **localStorage**。
 
 核心能力：
-- **公网访问**：一键部署到 Vercel（绑定 GitHub 仓库，push 即更新）。
+- **公网访问**：部署到 GitHub Pages（绑定 GitHub 仓库，免账号验证）；也可改用 Vercel（需账号通过验证）。
 - **跨设备同步**：通过 GitHub Gist 把全部本地数据带走，换设备一键拉取还原。
 - **Obsidian 联动**：日记 / 思考可一键唤起或写入 Obsidian 笔记，配套提供开箱即用的 Obsidian 模板库。
 
@@ -22,37 +22,30 @@ npm run preview    # 预览构建产物
 
 ---
 
-## 二、部署到公网（GitHub + Vercel）
+## 二、部署到公网（GitHub Pages，免账号验证）
 
-### 2.1 推送到 GitHub
-1. 在 GitHub 新建仓库，名称建议为 `agentic-workspace`（公开或私有均可）。
-2. 在本项目根目录执行：
-   ```bash
-   git init
-   git add .
-   git commit -m "init agentic-workspace"
-   git branch -M main
-   git remote add origin https://github.com/<你的用户名>/agentic-workspace.git
-   git push -u origin main
-   ```
-   （本仓库已 `git init` 并提交，可直接从 `git remote add` 开始。）
+> 说明：Vercel 对新账号有强制验证墙（"Your account requires further verification"），需本人提交 account recovery 表单等待审核。为不阻塞上线，本仓库默认采用 **GitHub Pages**——你已有可用的 GitHub 账号，无需任何额外验证。
 
-### 2.2 用 GitHub 登录 Vercel 导入仓库
-1. 打开 [vercel.com](https://vercel.com)，用 **GitHub 账号** 登录。
-2. 点击 **Add New → Project**，导入 `agentic-workspace` 仓库。
-3. Vercel 会自动识别 Vite，构建配置保持默认即可：
-   - **Framework Preset**：Vite
-   - **Build Command**：`npm run build`
-   - **Output Directory**：`dist`
-4. 点击 **Deploy**，等待构建完成，即可获得公网链接（如 `https://agentic-workspace.vercel.app`）。
+### 2.1 推送到 GitHub（已完成）
+本仓库已 `git init` 并提交：源码在 `main` 分支，构建产物已推送到 `gh-pages` 分支。
 
-### 2.3 自动部署
-导入后 Vercel 默认已开启：**每次 push 到 `main` 分支，自动重新部署**。无需额外配置。
+### 2.2 在 GitHub 启用 Pages（你只需点一下）
+1. 打开仓库 `agentic-workspace` → **Settings → Pages**。
+2. **Source** 选择 **Deploy from a branch**。
+3. **Branch** 选 **gh-pages**，目录选 **/(root)**，点 **Save**。
+4. 约 1 分钟后访问：`https://<你的用户名>.github.io/agentic-workspace/`
 
-> 本项目使用 HashRouter（`/#/goals` 形式），因此 Vercel 不需要任何 SPA rewrite 规则，部署零额外配置。
+### 2.3 后续更新部署
+当前为「手动构建 → 推 gh-pages 分支」方式。代码改动后需重新构建并把 `dist/` 内容推到 `gh-pages` 分支（仓库 `.github/` 下有说明）。
 
-### 2.4 环境变量（可选）
-如需把 GitHub Token 固化进构建（仅适用于 **公开** 仓库，否则 Token 会暴露在前端代码中），可在 Vercel 项目 **Settings → Environment Variables** 添加：
+### 2.4 想用 Vercel？（可选）
+等 Vercel 账号通过验证后，用 GitHub 登录 [vercel.com](https://vercel.com) → Import 本仓库即可；Vite 默认配置、无需 rewrite（HashRouter）。
+> 注意：若改用 Vercel，建议删除仓库里的 `.github/workflows/deploy.yml`（它走 GitHub Actions 部署，与分支方式冲突），或直接以 Vercel 为准。
+
+> 本项目使用 HashRouter（`/#/goals` 形式）+ `base:'./'` 相对路径，因此在任意静态托管（GitHub Pages / Vercel / Netlify / Cloudflare Pages）都无需任何 SPA rewrite 规则，部署零额外配置。
+
+### 2.5 环境变量（可选）
+如需把 GitHub Token 固化进构建（仅适用于 **公开** 仓库，否则 Token 会暴露在前端代码中），可在托管平台的环境变量里添加：
 ```
 VITE_GITHUB_TOKEN=你的token
 ```
