@@ -1,0 +1,1 @@
+import{t as e}from"./index-DBJuG31o.js";var t=e();function n({value:e=0,className:n=``}){let r=Math.max(0,Math.min(100,e));return(0,t.jsx)(`div`,{className:`h-1.5 w-full rounded-full bg-[var(--surface-2)] overflow-hidden ${n}`,children:(0,t.jsx)(`div`,{className:`h-full rounded-full bg-[var(--accent)] transition-all duration-500`,style:{width:`${r}%`}})})}export{n as t};

@@ -1,0 +1,1 @@
+import{n as e,r as t}from"./PageTitle-DmA_koNF.js";var n=t(e(e=>({vault:`Main`,restEnabled:!1,apiKey:``,setObsidianConfig:t=>e(e=>({...e,...t}))}),{name:`obsidian-storage`}));export{n as t};
