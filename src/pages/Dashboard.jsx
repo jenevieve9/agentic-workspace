@@ -1,5 +1,6 @@
 // src/pages/Dashboard.jsx
 import { useEffect, useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useGoalsStore } from '../stores/goals.slice';
 import { useMonthlyStore } from '../stores/monthly.slice';
 import { useTodosStore } from '../stores/todos.slice';
@@ -12,6 +13,7 @@ export default function Dashboard() {
   const { monthlies } = useMonthlyStore();
   const { todos } = useTodosStore();
   const { fitness56 } = useFitnessStore();
+  const navigate = useNavigate();
 
   const today = new Date().toISOString().slice(0, 10);
   const currentMonth = today.slice(0, 7);
@@ -64,16 +66,6 @@ export default function Dashboard() {
   );
   const upcomingMilestones = sortedMilestones.slice(0, 5);
 
-  // 判断里程碑状态
-  const getMilestoneStatus = (dueDate) => {
-    const now = new Date();
-    const due = new Date(dueDate);
-    const diff = (due - now) / (1000 * 60 * 60 * 24);
-    if (diff < 0) return { label: '已逾期', color: 'text-red-500 border-red-500' };
-    if (diff <= 3) return { label: '即将到期', color: 'text-yellow-600 border-yellow-600' };
-    return { label: '进行中', color: 'text-text-secondary border-border' };
-  };
-
   return (
     <div className="space-y-6">
       {/* 页面标题 */}
@@ -102,38 +94,77 @@ export default function Dashboard() {
       {/* 第二行：里程碑路线图 + 近期任务 */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* 左侧：里程碑路线图 */}
-        <div className="bg-surface border border-border rounded-lg p-5">
-          <div className="font-medium text-sm mb-4">里程碑路线图</div>
+        <div className="bg-surface border border-border/60 rounded-lg p-6">
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="text-sm font-medium text-text-secondary">📌 里程碑路线图</h3>
+            <span className="text-xs text-text-light">最近 5 个未完成</span>
+          </div>
+
           {upcomingMilestones.length === 0 ? (
-            <div className="text-text-light text-sm">暂无进行中的里程碑</div>
+            <div className="text-sm text-text-light py-4">🎉 所有里程碑已完成！</div>
           ) : (
             <div className="space-y-4">
               {upcomingMilestones.map((m, idx) => {
-                const status = getMilestoneStatus(m.dueDate);
+                const isOverdue = new Date(m.dueDate) < new Date();
+                const isSoon = !isOverdue && (new Date(m.dueDate) - new Date()) / (1000 * 60 * 60 * 24) <= 7;
+
                 return (
-                  <div key={m.id} className="flex items-start gap-3">
+                  <div key={m.id || idx} className="flex items-start gap-4">
+                    {/* 左侧：时间线节点 */}
                     <div className="flex flex-col items-center">
                       <div
-                        className={`w-3 h-3 rounded-full border-2 ${status.color} bg-white`}
+                        className={`w-3.5 h-3.5 rounded-full border-2 flex-shrink-0 mt-0.5
+                          ${isOverdue ? 'border-red-400 bg-red-100' : ''}
+                          ${isSoon ? 'border-yellow-400 bg-yellow-100' : ''}
+                          ${!isOverdue && !isSoon ? 'border-border bg-white' : ''}
+                        `}
                       />
                       {idx < upcomingMilestones.length - 1 && (
-                        <div className="w-0.5 h-8 bg-border" />
+                        <div className="w-0.5 h-8 bg-border/60" />
                       )}
                     </div>
-                    <div className="flex-1">
-                      <div className="text-sm font-medium">{m.title}</div>
-                      <div className="text-xs text-text-light font-mono">
-                        {m.goalTitle} · {m.dueDate}
+
+                    {/* 右侧：内容 */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={`text-sm font-medium
+                          ${isOverdue ? 'text-red-500' : ''}
+                          ${isSoon ? 'text-yellow-700' : ''}
+                        `}>
+                          {m.title}
+                        </span>
+                        <span className="text-xs text-text-light font-mono">
+                          {m.dueDate || '日期待定'}
+                        </span>
                       </div>
-                      <span className={`text-xs font-mono ${status.color}`}>
-                        {status.label}
-                      </span>
+                      <div className="text-xs text-text-light mt-0.5">
+                        {m.goalTitle}
+                        {isOverdue && <span className="ml-2 text-red-400">· 已逾期</span>}
+                        {isSoon && <span className="ml-2 text-yellow-600">· 即将到期</span>}
+                      </div>
                     </div>
+
+                    {/* 关联目标跳转 */}
+                    <button
+                      onClick={() => navigate('/goals')}
+                      className="text-xs text-text-light hover:text-text-main flex-shrink-0"
+                    >
+                      →
+                    </button>
                   </div>
                 );
               })}
             </div>
           )}
+
+          <div className="mt-4 pt-4 border-t border-border/40 text-center">
+            <Link
+              to="/goals"
+              className="text-sm text-text-light hover:text-text-main underline-offset-2 hover:underline transition"
+            >
+              查看全部年度目标 →
+            </Link>
+          </div>
         </div>
 
         {/* 右侧：近期任务（本周，按日期分组） */}
