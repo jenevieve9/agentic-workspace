@@ -17,7 +17,9 @@ const getVault = () => {
 
 // 新建/打开一条笔记（obsidian://new）
 // path: 可选，传入时使用 file 参数强制写到指定路径（覆盖 Obsidian 默认位置）
-export const openObsidianNew = (title, content = '', path = null) => {
+// options.overwrite: 已存在同名文件时是否覆盖（默认 false，会产生 " 1" 后缀）
+// options.silent: 创建后不打开（默认 false）
+export const openObsidianNew = (title, content = '', path = null, options = {}) => {
   const vault = getVault();
   const body = encodeURIComponent(
     content || `# ${title}\n\n## 今日状态\n-\n\n## 思考\n-`
@@ -26,8 +28,28 @@ export const openObsidianNew = (title, content = '', path = null) => {
   const fileOrName = path
     ? `file=${encodeURIComponent(path)}`
     : `name=${encodeURIComponent(title)}`;
-  const url = `obsidian://new?vault=${encodeURIComponent(vault)}&${fileOrName}&content=${body}`;
+  const extras = [
+    options.overwrite ? 'overwrite=true' : '',
+    options.silent ? 'silent=true' : '',
+  ].filter(Boolean).join('&');
+  const url = `obsidian://new?vault=${encodeURIComponent(vault)}&${fileOrName}&content=${body}${extras ? '&' + extras : ''}`;
   window.open(url, '_blank');
+};
+
+// 把内容前几个字清洗成可作为文件名的 slug（去除 / \ : * ? " < > | 换行 等）
+export const slugFromContent = (str, maxLen = 8) => {
+  if (!str) return '';
+  return String(str)
+    .replace(/[\/\\:*?"<>|\n\r\t]/g, '')
+    .replace(/\s+/g, '')
+    .trim()
+    .slice(0, maxLen);
+};
+
+// 当前时间 HHMM（用于标题加时分确保唯一）
+const timeHHMM = () => {
+  const d = new Date();
+  return `${String(d.getHours()).padStart(2, '0')}${String(d.getMinutes()).padStart(2, '0')}`;
 };
 
 // 按文件名打开既有笔记；path 形如 "01_Daily/2026/07/日记_2026-07-21"
@@ -45,12 +67,16 @@ export const openObsidianByPath = (date) => {
 };
 
 // 将一条思考同步为 Obsidian 笔记（写入 03_Thoughts/{category}/）
+// 标题格式：思考_2026-07-21_1349_AI自动化剪辑（日期+时分+内容摘要，确保唯一且有意义）
 export const syncThoughtToObsidian = (content, category = '') => {
   const date = todayStr();
-  const title = `思考_${date}`;
+  const hhmm = timeHHMM();
+  const slug = slugFromContent(content);
+  const baseTitle = `思考_${date}_${hhmm}`;
+  const title = slug ? `${baseTitle}_${slug}` : baseTitle;
   const path = category ? `03_Thoughts/${category}/${title}` : `03_Thoughts/${title}`;
-  const body = `# 思考记录\n\n**分类**: ${category || '未分类'}\n**日期**: ${date}\n\n${content}`;
-  openObsidianNew(title, body, path);
+  const body = `# ${title}\n\n**分类**: ${category || '未分类'}\n**日期**: ${date}\n\n${content}`;
+  openObsidianNew(title, body, path, { overwrite: true });
 };
 
 // ===== Local REST API（可选，需在 Obsidian 安装 Local REST API 插件）=====
@@ -91,6 +117,7 @@ export const testObsidianRest = async () => {
 };
 
 // 一键将今日日记写入 Obsidian：URL Scheme 用 file 参数指定 01_Daily/YYYY/MM/ 路径
+// overwrite: true 避免重复点击产生"日记_2026-07-21 1"等多份文件
 export const writeTodayDiary = async (content = '') => {
   const { restEnabled } = getConfig();
   const now = new Date();
@@ -102,6 +129,6 @@ export const writeTodayDiary = async (content = '') => {
   if (restEnabled) {
     await createNoteViaRest(`${path}.md`, content || `# ${title}\n\n## 今日状态\n-\n\n## 思考\n-`);
   } else {
-    openObsidianNew(title, content, path);
+    openObsidianNew(title, content, path, { overwrite: true });
   }
 };

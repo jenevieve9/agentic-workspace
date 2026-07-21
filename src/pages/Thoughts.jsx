@@ -27,14 +27,24 @@ export default function Thoughts() {
   };
 
   // 将一条思考同步为 Obsidian 笔记（写入 03_Thoughts/{category}/）
+  // 标题格式：思考_2026-07-21_1349_AI自动化剪辑（日期+时分+内容摘要，确保唯一）
   const syncToObsidian = (thought) => {
-    const title = `思考_${thought.date}`;
+    const now = new Date();
+    const date = now.toISOString().slice(0, 10);
+    const hhmm = `${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
     const cat = thought.category || '未分类';
+    const slug = (thought.content || '')
+      .replace(/[\/\\:*?"<>|\n\r\t]/g, '')
+      .replace(/\s+/g, '')
+      .trim()
+      .slice(0, 8);
+    const baseTitle = `思考_${date}_${hhmm}`;
+    const title = slug ? `${baseTitle}_${slug}` : baseTitle;
     const path = `03_Thoughts/${cat}/${title}`;
-    const text = `# ${title}\n\n**分类**: ${cat}\n**日期**: ${thought.date}\n\n${thought.content}`;
+    const text = `# ${title}\n\n**分类**: ${cat}\n**日期**: ${date}\n\n${thought.content}`;
     const encoded = encodeURIComponent(text);
     window.open(
-      `obsidian://new?vault=${encodeURIComponent(vault)}&file=${encodeURIComponent(path)}&content=${encoded}`,
+      `obsidian://new?vault=${encodeURIComponent(vault)}&file=${encodeURIComponent(path)}&content=${encoded}&overwrite=true`,
       '_blank'
     );
   };
