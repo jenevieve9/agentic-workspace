@@ -3,6 +3,7 @@ import { useFitnessStore } from '../stores/fitness.slice';
 import Editable from '../components/Editable';
 import PageTitle from '../components/PageTitle';
 import Progress from '../components/Progress';
+import TrainingSchedule from '../components/TrainingSchedule';
 import { Link } from 'react-router-dom';
 
 const WEEK_DAYS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
@@ -38,11 +39,12 @@ export default function Fitness() {
   const dateKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
   const renderGrid = () => {
+    const startDate = new Date(2026, 6, 21); // 7月21日（JS月份从0开始）
     const today = new Date();
     const days = [];
-    for (let i = 55; i >= 0; i--) {
-      const d = new Date(today);
-      d.setDate(d.getDate() - i);
+    for (let i = 0; i < 56; i++) {
+      const d = new Date(startDate);
+      d.setDate(startDate.getDate() + i);
       days.push(d);
     }
     return days.map((d) => {
@@ -70,7 +72,7 @@ export default function Fitness() {
       {/* 头部 */}
       <PageTitle
         pageKey="fitness"
-        subtitle="7.16 – 9.10 · 京东健康 56天挑战"
+        subtitle="7.21 – 9.14 · 56天挑战"
         right={
           <div className="flex items-center gap-3">
             <span className="px-3 py-1 border border-border rounded-full text-sm font-mono">{percent}%</span>
@@ -114,6 +116,9 @@ export default function Fitness() {
           ))}
         </div>
       </section>
+
+      {/* 训练日程表 */}
+      <TrainingSchedule />
 
       {/* 训练计划 */}
       <section>
