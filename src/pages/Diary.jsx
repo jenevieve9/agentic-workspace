@@ -14,13 +14,17 @@ export default function Diary() {
 
   const writeToday = () => writeTodayDiary();
 
-  // 在 Obsidian 中新建/打开一条日记笔记（URL Scheme）
+  // 在 Obsidian 中新建/打开一条日记笔记（URL Scheme）— 用 file 参数强制写到 01_Daily/YYYY/MM/
   const openObsidianNote = (date, content = '') => {
+    const d = new Date(date);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
     const title = `日记_${date}`;
-    const defaultContent = `# 日记 ${date}\n\n## 今日状态\n-\n\n## 思考\n-`;
+    const path = `01_Daily/${yyyy}/${mm}/${title}`;
+    const defaultContent = `# ${title}\n\n## 今日状态\n-\n\n## 思考\n-`;
     const encoded = encodeURIComponent(content || defaultContent);
     window.open(
-      `obsidian://new?vault=${encodeURIComponent(vault)}&name=${encodeURIComponent(title)}&content=${encoded}`,
+      `obsidian://new?vault=${encodeURIComponent(vault)}&file=${encodeURIComponent(path)}&content=${encoded}`,
       '_blank'
     );
   };

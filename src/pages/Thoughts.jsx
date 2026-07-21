@@ -26,13 +26,15 @@ export default function Thoughts() {
     navigate('/content-studio', { state: { topic: t.content } });
   };
 
-  // 将一条思考同步为 Obsidian 笔记（URL Scheme）
+  // 将一条思考同步为 Obsidian 笔记（写入 03_Thoughts/{category}/）
   const syncToObsidian = (thought) => {
     const title = `思考_${thought.date}`;
-    const text = `# 思考记录\n\n**分类**: ${thought.category}\n**日期**: ${thought.date}\n\n${thought.content}`;
+    const cat = thought.category || '未分类';
+    const path = `03_Thoughts/${cat}/${title}`;
+    const text = `# ${title}\n\n**分类**: ${cat}\n**日期**: ${thought.date}\n\n${thought.content}`;
     const encoded = encodeURIComponent(text);
     window.open(
-      `obsidian://new?vault=${encodeURIComponent(vault)}&name=${encodeURIComponent(title)}&content=${encoded}`,
+      `obsidian://new?vault=${encodeURIComponent(vault)}&file=${encodeURIComponent(path)}&content=${encoded}`,
       '_blank'
     );
   };
