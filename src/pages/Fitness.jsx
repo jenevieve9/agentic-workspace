@@ -118,7 +118,10 @@ export default function Fitness() {
       </section>
 
       {/* 训练日程表 */}
-      <TrainingSchedule />
+      <div className="bg-surface border border-border/60 rounded-lg p-5">
+        <h2 className="text-base font-light tracking-wide mb-4">训练日程表</h2>
+        <TrainingSchedule />
+      </div>
 
       {/* 训练计划 */}
       <section>
