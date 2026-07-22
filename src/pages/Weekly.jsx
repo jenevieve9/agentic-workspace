@@ -81,7 +81,7 @@ export default function Weekly() {
       `---\n完成度：${pct}`;
 
     const encoded = encodeURIComponent(markdown);
-    const path = encodeURIComponent(week.filename);
+    const path = encodeURIComponent(`02_Reflections/周计划/${week.filename}`);
     window.open(
       `obsidian://new?vault=${encodeURIComponent(vault)}&file=${path}&content=${encoded}&overwrite=true`,
       '_blank'
