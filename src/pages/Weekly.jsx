@@ -1,87 +1,90 @@
 // src/pages/Weekly.jsx
-// 周计划：按星期组织任务 + 一键同步到 Obsidian
-import { useState } from 'react';
+// 周计划：本周重点编辑 + 实时筛选所有 TODO（按 weekId）+ Obsidian 同步
+import { useState, useCallback } from 'react';
 import PageTitle from '../components/PageTitle';
-import Editable from '../components/Editable';
-import { useWeeklyStore, WEEK_DAYS } from '../stores/weekly.slice';
+import { useWeeklyStore } from '../stores/weekly.slice';
+import { useTodosStore, getWeekId } from '../stores/todos.slice';
 import { useObsidianStore } from '../stores/obsidian.slice';
 
-// 计算当前周信息（ISO 周数 + 周一到周日日期）
-const getCurrentWeek = () => {
-  const now = new Date();
-  const dayOfWeek = now.getDay() || 7; // 周日 = 7
-  const monday = new Date(now);
-  monday.setDate(now.getDate() - dayOfWeek + 1);
+// 计算某天的周一（weekOffset: 0=本周, -1=上周, 1=下周）
+const getMonday = (date, offset = 0) => {
+  const d = new Date(date);
+  const dow = d.getDay() || 7;
+  d.setDate(d.getDate() - dow + 1 + offset * 7);
+  return d;
+};
+
+const formatMD = (d) => `${d.getMonth() + 1}/${d.getDate()}`;
+const formatDate = (d) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
+// 生成该周的所有日期 (Mon-Sun)
+const weekDates = (monday) =>
+  Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    return formatDate(d);
+  });
+
+export default function Weekly() {
+  const { weeklyPlans, setWeeklySummary } = useWeeklyStore();
+  const { todos, toggleTodo } = useTodosStore();
+  const { vault } = useObsidianStore();
+
+  const [offset, setOffset] = useState(0);
+  const monday = getMonday(new Date(), offset);
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
 
-  const pad = (n) => String(n).padStart(2, '0');
-  const formatMD = (d) => `${d.getMonth() + 1}/${d.getDate()}`;
+  const weekId = getWeekId(formatDate(monday));
+  const dates = weekDates(monday);
+  const summary = weeklyPlans[weekId]?.summary || '';
 
-  // ISO 周数
-  const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
-  const dDay = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - dDay);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  const weekNum = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+  // 筛选本周所有 TODO
+  const weekTasks = dates.flatMap((date) =>
+    (todos[date] || []).map((t) => ({
+      ...t,
+      sourceDate: date,
+    }))
+  );
 
-  return {
-    weekNum,
-    year: now.getFullYear(),
-    monday,
-    sunday,
-    mondayStr: formatMD(monday),
-    sundayStr: formatMD(sunday),
-    display: `W${pad(weekNum)}（${formatMD(monday)} – ${formatMD(sunday)}）`,
-    dateRange: `${formatMD(monday)} – ${formatMD(sunday)}`,
-    filename: `周计划_${now.getFullYear()}-W${pad(weekNum)}`,
-  };
-};
+  const total = weekTasks.length;
+  const done = weekTasks.filter((t) => t.done).length;
 
-export default function Weekly() {
-  const { plan, addTask, toggleTask, updateTask, removeTask } = useWeeklyStore();
-  const { vault } = useObsidianStore();
-  const [draft, setDraft] = useState({});
+  // 本周重点实时保存
+  const handleSummaryChange = useCallback(
+    (e) => setWeeklySummary(weekId, e.target.value),
+    [weekId, setWeeklySummary]
+  );
 
-  const week = getCurrentWeek();
-
-  const handleAdd = (day) => {
-    const text = (draft[day] || '').trim();
-    if (text) {
-      addTask(day, text);
-      setDraft((d) => ({ ...d, [day]: '' }));
-    }
-  };
-
-  // 同步到 Obsidian：将本周所有任务格式化为 Markdown，写入仓库根目录
+  // ====== 同步到 Obsidian ======
   const syncToObsidian = () => {
-    const tasks = WEEK_DAYS.reduce((lines, day) => {
-      const dayTasks = plan[day] || [];
-      if (dayTasks.length === 0) return lines;
-      lines.push(`### ${day}`);
+    const lines = [];
+    dates.forEach((date, i) => {
+      const dayTasks = todos[date] || [];
+      if (dayTasks.length === 0) return;
+      const labels = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+      lines.push(`### ${labels[i]}（${formatMD(new Date(date))}）`);
       dayTasks.forEach((t) => {
         const check = t.done ? 'x' : ' ';
-        const dateTag = `（${day}新增）`;
-        lines.push(`- [${check}] ${t.text} ${dateTag}`);
+        lines.push(`- [${check}] ${t.content}`);
       });
       lines.push('');
-      return lines;
-    }, []);
-
-    const total = WEEK_DAYS.reduce((c, d) => c + (plan[d] || []).length, 0);
-    const done = WEEK_DAYS.reduce((c, d) => c + (plan[d] || []).filter((t) => t.done).length, 0);
-    const pct = total > 0 ? `${done}/${total}` : '0/0';
+    });
 
     const markdown =
-      `# 周计划 · ${week.display}\n\n` +
-      `## 本周重点\n` +
-      `[在此填写本周重点]\n\n` +
+      `# 周计划 · ${weekId}（${formatMD(monday)} – ${formatMD(sunday)}）\n\n` +
+      `## 本周重点\n${summary || '[在此填写本周重点]'}\n\n` +
       `## 本周任务\n\n` +
-      tasks.join('\n') +
-      `---\n完成度：${pct}`;
+      lines.join('\n') +
+      `---\n完成度：${done}/${total}`;
 
     const encoded = encodeURIComponent(markdown);
-    const path = encodeURIComponent(`02_Reflections/周计划/${week.filename}`);
+    const path = encodeURIComponent(`02_Reflections/周计划/周计划_${weekId}`);
     window.open(
       `obsidian://new?vault=${encodeURIComponent(vault)}&file=${path}&content=${encoded}&overwrite=true`,
       '_blank'
@@ -90,57 +93,91 @@ export default function Weekly() {
 
   return (
     <div className="space-y-6">
-      <PageTitle
-        pageKey="weekly"
-        subtitle={`第${week.weekNum}周（${week.mondayStr} – ${week.sundayStr}）`}
-        right={
+      {/* 头部：周导航 + Obsidian 同步 */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-3">
           <button
-            onClick={syncToObsidian}
-            className="px-4 py-1.5 border border-border rounded-sm text-sm bg-white hover:bg-black hover:text-white transition"
+            onClick={() => setOffset((o) => o - 1)}
+            className="px-2 py-1 text-xs border border-border rounded-sm hover:bg-[var(--surface-2)]"
           >
-            同步到 Obsidian
+            ← 上一周
           </button>
-        }
-      />
+          <PageTitle
+            pageKey="weekly"
+            subtitle={`第${weekId.split('-W')[1]}周（${formatMD(monday)} – ${formatMD(sunday)}）`}
+          />
+          <button
+            onClick={() => setOffset((o) => o + 1)}
+            className="px-2 py-1 text-xs border border-border rounded-sm hover:bg-[var(--surface-2)]"
+          >
+            下一周 →
+          </button>
+        </div>
+        <button
+          onClick={syncToObsidian}
+          className="px-4 py-1.5 border border-border rounded-sm text-sm bg-white hover:bg-black hover:text-white transition shrink-0"
+        >
+          同步到 Obsidian
+        </button>
+      </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3">
-        {WEEK_DAYS.map((day) => (
-          <div key={day} className="bg-surface border border-border rounded-md p-3 min-h-[160px] flex flex-col">
-            <div className="text-xs font-mono text-text-light mb-2">{day}</div>
-            <div className="flex-1 space-y-2">
-              {(plan[day] || []).map((t) => (
-                <div key={t.id} className="flex items-start gap-2 text-sm group">
-                  <input
-                    type="checkbox"
-                    className="w-3.5 h-3.5 accent-black mt-0.5"
-                    checked={t.done}
-                    onChange={() => toggleTask(day, t.id)}
-                  />
-                  <Editable
-                    as="span"
-                    value={t.text}
-                    onCommit={(v) => updateTask(day, t.id, v)}
-                    className={`flex-1 outline-none focus:ring-1 focus:ring-black rounded px-1 ${t.done ? 'text-text-light line-through' : ''}`}
-                  />
-                  <button
-                    className="text-text-light hover:text-[var(--accent)] text-xs opacity-0 group-hover:opacity-100"
-                    onClick={() => removeTask(day, t.id)}
-                  >
-                    删
-                  </button>
-                </div>
-              ))}
-            </div>
-            <input
-              type="text"
-              placeholder="添加任务"
-              value={draft[day] || ''}
-              onChange={(e) => setDraft((d) => ({ ...d, [day]: e.target.value }))}
-              onKeyDown={(e) => e.key === 'Enter' && handleAdd(day)}
-              className="mt-2 w-full px-2 py-1 border border-border rounded-sm text-xs focus:outline-none focus:ring-1 focus:ring-black"
+      {/* 本周重点 */}
+      <div className="bg-surface border border-border rounded-md p-4">
+        <div className="text-xs font-mono text-text-light mb-2">本周重点</div>
+        <textarea
+          value={summary}
+          onChange={handleSummaryChange}
+          placeholder="写下本周最重要的 1-3 个目标..."
+          rows={3}
+          className="w-full px-3 py-2 border border-border rounded-sm text-sm resize-none focus:outline-none focus:ring-1 focus:ring-black"
+        />
+      </div>
+
+      {/* 本周任务 + 进度 */}
+      <div className="bg-surface border border-border rounded-md p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-xs font-mono text-text-light">
+            本周任务 · {weekId.split('-W')[1]}
+          </div>
+          <div className="text-xs font-mono text-text-secondary">
+            已完成 {done}/{total}
+          </div>
+        </div>
+
+        {/* 进度条 */}
+        {total > 0 && (
+          <div className="h-1 w-full bg-[var(--surface-2)] rounded-full mb-4 overflow-hidden">
+            <div
+              className="h-full bg-black rounded-full transition-all"
+              style={{ width: `${total > 0 ? Math.round((done / total) * 100) : 0}%` }}
             />
           </div>
-        ))}
+        )}
+
+        {weekTasks.length === 0 ? (
+          <div className="text-text-light text-sm text-center py-6">
+            本周暂无任务，去「今日 TODO」页面添加
+          </div>
+        ) : (
+          <div className="space-y-1">
+            {weekTasks.map((t) => (
+              <div key={`${t.sourceDate}-${t.id}`} className="flex items-center gap-3 py-1.5 border-b border-border/40 group">
+                <input
+                  type="checkbox"
+                  className="w-3.5 h-3.5 accent-black flex-shrink-0"
+                  checked={t.done}
+                  onChange={() => toggleTodo(t.sourceDate, t.id)}
+                />
+                <span className={`text-sm flex-1 ${t.done ? 'text-text-light line-through' : ''}`}>
+                  {t.content}
+                </span>
+                <span className="text-xs text-text-light flex-shrink-0 opacity-40 group-hover:opacity-100">
+                  {formatMD(new Date(t.sourceDate))}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
